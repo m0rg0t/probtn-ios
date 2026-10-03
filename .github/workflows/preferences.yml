@@ -1,0 +1,26 @@
+name: Sample preference persistence
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  preferences:
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prove original source regression
+        run: |
+          git show 576966204a3fef3f683df6ce0fd4c9639d812515:Kitchensink/Kitchensink/Classes/ViewControllers/Main/ContentViewController.m > "$RUNNER_TEMP/original-preferences.m"
+          if python3 tests/run_preferences_tests.py --source "$RUNNER_TEMP/original-preferences.m" > "$RUNNER_TEMP/baseline.log" 2>&1; then
+            cat "$RUNNER_TEMP/baseline.log"
+            echo "Expected the original UIImage persistence regression to fail"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/baseline.log"
+          grep -F 'FAIL: saved custom image must be NSData' "$RUNNER_TEMP/baseline.log"
+      - name: Test fixed production persistence methods offline
+        run: python3 tests/run_preferences_tests.py
