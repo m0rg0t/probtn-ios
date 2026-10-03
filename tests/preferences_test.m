@@ -28,10 +28,28 @@ static NSData *UIImagePNGRepresentation(UIImage *image) { return image.bytes; }
 
 static NSUserDefaults *isolatedDefaults;
 @interface TestUserDefaults : NSObject
-+ (NSUserDefaults *)standardUserDefaults;
++ (instancetype)standardUserDefaults;
+- (id)objectForKey:(NSString *)key;
+- (void)setObject:(id)value forKey:(NSString *)key;
+- (BOOL)synchronize;
 @end
 @implementation TestUserDefaults
-+ (NSUserDefaults *)standardUserDefaults { return isolatedDefaults; }
++ (instancetype)standardUserDefaults {
+    static TestUserDefaults *proxy;
+    if (proxy == nil) proxy = [TestUserDefaults new];
+    return proxy;
+}
+- (id)objectForKey:(NSString *)key { return [isolatedDefaults objectForKey:key]; }
+- (void)setObject:(id)value forKey:(NSString *)key {
+    // Modern Foundation may abort rather than throw for unsupported values.
+    // Its actual property-list validator makes the invalid baseline safely
+    // observable before forwarding valid data to the real isolated defaults.
+    if (![NSPropertyListSerialization propertyList:value isValidForFormat:NSPropertyListBinaryFormat_v1_0]) {
+        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"Not a property list" userInfo:nil];
+    }
+    [isolatedDefaults setObject:value forKey:key];
+}
+- (BOOL)synchronize { return [isolatedDefaults synchronize]; }
 @end
 
 @interface ContentPreference : NSObject {

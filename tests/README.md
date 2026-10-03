@@ -9,7 +9,10 @@ The runner extracts the exact `stringFromType:`, `loadFromSetting`, and
 `saveToSetting` methods from production `ContentViewController.m`; it does not
 copy or reimplement their persistence logic. Foundation supplies real
 NSDictionary, NSData, property-list validation and NSUserDefaults. Defaults are
-redirected to a random, synthetic suite and removed afterward. Test-only UIImage
+redirected through a test-only proxy to a random, synthetic suite and removed
+afterward. The proxy uses Foundation property-list validation before forwarding
+valid writes, so invalid original UIImage values fail safely instead of aborting
+the host process on recent macOS. Test-only UIImage
 and PNG conversion doubles carry deterministic bytes. No vendor SDK, UIKit,
 application delegate, analytics, network, remote service or user data is used.
 
